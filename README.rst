@@ -1,5 +1,5 @@
 mir.sqlqs
-=============
+=========
 
 .. image:: https://circleci.com/gh/project-mir/mir.sqlqs.svg?style=shield
    :target: https://circleci.com/gh/project-mir/mir.sqlqs
