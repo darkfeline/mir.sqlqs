@@ -70,6 +70,8 @@ class Column(namedtuple('Column', 'name,constraints')):
     constraints -- sequence of constraint strings
     """
 
+    __slots__ = ()
+
     def __str__(self):
         return ' '.join(itertools.chain(('"%s"' % self.name,),
                                         self.constraints))
