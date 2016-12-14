@@ -42,7 +42,11 @@ def test_table_str():
         ],
         constraints=[],
     )
-    assert str(table).startswith('CREATE TABLE "members"')
+    assert str(table) == (
+        'CREATE TABLE "members" ('
+        '"name" PRIMARY KEY,'
+        '"subgroup" NOT NULL'
+        ')')
 
 
 def test_queryset_iter(conn):
