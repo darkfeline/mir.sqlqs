@@ -15,3 +15,6 @@ mir.sqlqs
    :alt: Latest Documentation
 
 Relational SQL API (SQL QuerySet).
+
+mir.sqlqs is in active alpha development, so the only documentation is
+the code itself and the tests.
