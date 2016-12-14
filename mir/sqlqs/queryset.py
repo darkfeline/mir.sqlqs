@@ -108,7 +108,7 @@ class QuerySet(collections.abc.Set,
     def _select_query(self):
         """Return the select query this set represents."""
         columns_string = ','.join(
-            '"%s"' % column.name for column in self.table
+            '"%s"' % column.name for column in self.table.columns
         )
         return 'SELECT {columns} from {source}'.format(
             columns=columns_string,

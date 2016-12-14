@@ -29,3 +29,43 @@ def test_table_create(conn):
     cur.execute("SELECT name FROM sqlite_master"
                 " WHERE type='table' AND name='members'")
     assert len(cur.fetchall()) == 1
+
+
+def test_table_str():
+    table = queryset.Table(
+        name='members',
+        columns=[
+            queryset.Column(name='name', constraints=['PRIMARY KEY']),
+            queryset.Column(name='subgroup', constraints=['NOT NULL']),
+        ],
+        constraints=[],
+    )
+    assert str(table).startswith('CREATE TABLE "members"')
+
+
+def test_queryset_iter(conn):
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE members ("
+                "name PRIMARY KEY,"
+                "subgroup NOT NULL"
+                ")")
+    cur.execute("INSERT INTO members (name, subgroup) VALUES"
+                " ('maki', 'bibi'), ('umi', 'lily white')")
+
+    table = queryset.Table(
+        name='members',
+        columns=[
+            queryset.Column(name='name', constraints=['PRIMARY KEY']),
+            queryset.Column(name='subgroup', constraints=['NOT NULL']),
+        ],
+        constraints=[],
+    )
+    qs = queryset.QuerySet(
+        conn=conn,
+        table=table,
+    )
+
+    assert set(qs) == {
+        table.row_class(name='maki', subgroup='bibi'),
+        table.row_class(name='umi', subgroup='lily white'),
+    }
