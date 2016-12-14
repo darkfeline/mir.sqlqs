@@ -17,21 +17,19 @@ from setuptools import setup
 setup(
     name='mir.sqlqs',
     version='0.1.0',
-    description='Distribution template for the mir namespace',
+    description='Relational SQL API (SQL QuerySet)',
     long_description='',
     keywords='',
     url='https://github.com/darkfeline/mir.sqlqs',
     author='Allen Li',
     author_email='darkfeline@felesatra.moe',
     classifiers=[
-        # https://pypi.python.org/pypi?%3Aaction=list_classifiers
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3.5',
     ],
 
-    py_modules=['mir.sqlqs'],
-    packages=[],
+    packages=['mir.sqlqs'],
     install_requires=[],
 )

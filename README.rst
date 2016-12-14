@@ -14,4 +14,4 @@ mir.sqlqs
    :target: http://mir-sqlqs.readthedocs.io/en/latest/
    :alt: Latest Documentation
 
-Template project for Python projects under Project Mir.
+Relational SQL API (SQL QuerySet).
