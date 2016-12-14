@@ -76,7 +76,7 @@ class Column(namedtuple('Column', 'name,constraints')):
 
 
 class QuerySet(collections.abc.Set,
-               namedtuple('QuerySet', 'conn,table,source')):
+               namedtuple('QuerySet', 'conn,table')):
 
     """SQL queries represented as sets
 
@@ -84,7 +84,6 @@ class QuerySet(collections.abc.Set,
 
     conn -- database connection object
     table -- Table instance
-    source -- query source (table name string or subquery string)
     """
 
     __slots__ = ()
@@ -113,5 +112,5 @@ class QuerySet(collections.abc.Set,
         )
         return 'SELECT {columns} from {source}'.format(
             columns=columns_string,
-            source=self.source,
+            source=self.table.name,
         )
