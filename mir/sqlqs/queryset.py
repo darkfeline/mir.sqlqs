@@ -110,7 +110,7 @@ class QuerySet(collections.abc.Set,
         columns_string = ','.join(
             '"%s"' % column.name for column in self.table.columns
         )
-        return 'SELECT {columns} from {source}'.format(
+        return 'SELECT {columns} FROM {source}'.format(
             columns=columns_string,
-            source=self.table.name,
+            source='"%s"' % self.table.name,
         )
