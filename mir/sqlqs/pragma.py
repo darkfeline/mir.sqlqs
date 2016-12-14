@@ -22,6 +22,11 @@ class PragmaHelper:
     def __init__(self, conn):
         self._conn = conn
 
+    def __repr__(self):
+        return '{cls}({this._conn!r})'.format(
+            cls=type(self).__qualname__,
+            this=self)
+
     def _execute(self, *args):
         return self._conn.cursor().execute(*args)
 

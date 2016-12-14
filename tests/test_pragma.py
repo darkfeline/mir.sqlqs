@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest import mock
+
 from mir.sqlqs.pragma import PragmaHelper
 
 
@@ -44,3 +46,8 @@ def test_get_user_version(conn):
 def test_check_foreign_keys(conn):
     helper = PragmaHelper(conn)
     assert list(helper.check_foreign_keys()) == []
+
+
+def test_pragma_helper_repr():
+    helper = PragmaHelper(mock.sentinel.conn)
+    assert repr(helper) == 'PragmaHelper(sentinel.conn)'
