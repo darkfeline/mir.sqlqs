@@ -76,7 +76,7 @@ class Column(namedtuple('Column', 'name,constraints')):
 
 
 class QuerySet(collections.abc.Set,
-               namedtuple('QuerySet', 'conn,table')):
+               namedtuple('QuerySet', 'conn,table,where_expr')):
 
     """SQL queries represented as sets
 
@@ -84,9 +84,13 @@ class QuerySet(collections.abc.Set,
 
     conn -- database connection object
     table -- Table instance
+    where_expr -- WHERE expression
     """
 
     __slots__ = ()
+
+    def __new__(cls, conn, table, where_expr=''):
+        return super().__new__(cls, conn, table, where_expr)
 
     def __iter__(self):
         cur = self.conn.cursor()
@@ -110,7 +114,10 @@ class QuerySet(collections.abc.Set,
         columns_string = ','.join(
             '"%s"' % column.name for column in self.table.columns
         )
-        return 'SELECT {columns} FROM {source}'.format(
+        query_parts = ['SELECT {columns} FROM {source}'.format(
             columns=columns_string,
             source='"%s"' % self.table.name,
-        )
+        )]
+        if self.where_expr:
+            query_parts.append('WHERE %s' % self.where_expr)
+        return ' '.join(query_parts)

@@ -73,6 +73,34 @@ def test_queryset_iter(conn):
     }
 
 
+def test_queryset_filter(conn):
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE members ("
+                "name PRIMARY KEY,"
+                "subgroup NOT NULL"
+                ")")
+    cur.execute("INSERT INTO members (name, subgroup) VALUES"
+                " ('maki', 'bibi'), ('umi', 'lily white')")
+
+    table = queryset.Table(
+        name='members',
+        columns=[
+            queryset.Column(name='name', constraints=['PRIMARY KEY']),
+            queryset.Column(name='subgroup', constraints=['NOT NULL']),
+        ],
+        constraints=[],
+    )
+    qs = queryset.QuerySet(
+        conn=conn,
+        table=table,
+        where_expr="subgroup='bibi'",
+    )
+
+    assert set(qs) == {
+        table.row_class(name='maki', subgroup='bibi'),
+    }
+
+
 def test_queryset_len(conn):
     cur = conn.cursor()
     cur.execute("CREATE TABLE members ("
