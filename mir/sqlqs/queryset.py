@@ -32,6 +32,7 @@ class Table(namedtuple('Table', 'name,columns,constraints,row_class')):
     Automatically generated:
 
     row_class -- namedtuple for table rows
+    column_names -- list of column names
     """
 
     __slots__ = ()
