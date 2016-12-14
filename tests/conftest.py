@@ -1,3 +1,4 @@
+import sqlite3
 import pathlib
 
 import pytest
@@ -7,3 +8,8 @@ import pytest
 def tmpdir(tmpdir_factory):
     tmpdir = tmpdir_factory.mktemp('tmpdir')
     return pathlib.Path(str(tmpdir))
+
+
+@pytest.fixture
+def conn():
+    return sqlite3.connect(':memory:', isolation_level=None)

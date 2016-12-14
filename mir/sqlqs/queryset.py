@@ -16,50 +16,102 @@
 
 from collections import namedtuple
 import collections.abc
+import itertools
 
 
-class Schema(namedtuple('Schema', 'name,columns,constraints,relation_class')):
+class Table(namedtuple('Table', 'name,columns,constraints,row_class')):
+
+    """Table schema
+
+    Fields:
+
+    name -- table name string
+    columns -- sequence of ColumnDef instances
+    constraints -- sequence of constraint strings
+
+    Automatically generated:
+
+    row_class -- namedtuple for table rows
+    """
+
+    __slots__ = ()
 
     def __new__(cls, name, columns, constraints):
-        relation_class = namedtuple(name, [column.name for column in columns])
-        return super().__new__(cls, name, columns, constraints, relation_class)
+        row_class = namedtuple(name, [column.name for column in columns])
+        return super().__new__(cls, name, columns, constraints, row_class)
+
+    def __str__(self):
+        return self._create_query
+
+    def create(self, conn):
+        """Create a table with this schema."""
+        cur = conn.cursor()
+        cur.execute(self._create_query)
+
+    @property
+    def _create_query(self):
+        """Return the corresponding create query."""
+        return 'CREATE TABLE "{name}" ({defs})'.format(
+            name=self.name,
+            defs=','.join(itertools.chain(
+                (str(column) for column in self.columns),
+                self.constraints,
+            )),
+        )
 
 
-ColumnDef = namedtuple('ColumnDef', 'name,constraints')
+class Column(namedtuple('Column', 'name,constraints')):
+
+    """Column definition
+
+    Fields:
+
+    name -- column name as a string
+    constraints -- sequence of constraint strings
+    """
+
+    def __str__(self):
+        return ' '.join(itertools.chain(('"%s"' % self.name,),
+                                        self.constraints))
 
 
-class PureQuerySet:
+class QuerySet(collections.abc.Set,
+               namedtuple('QuerySet', 'conn,table,source')):
 
-    def __init__(self, schema, source):
-        self._schema = schema
-        self._source = source
+    """SQL queries represented as sets
+
+    Fields:
+
+    conn -- database connection object
+    table -- Table instance
+    source -- query source (table name string or subquery string)
+    """
+
+    __slots__ = ()
+
+    def __iter__(self):
+        cur = self.conn.cursor()
+        cur.execute(self._select_query)
+        row_class = self.table.row_class
+        for row in cur:
+            yield row_class._make(row)
+
+    def __contains__(self, row):
+        return row in set(self)
+
+    def __len__(self):
+        return len(set(self))
 
     def __str__(self):
         return self._select_query
 
     @property
     def _select_query(self):
+        """Return the select query this set represents."""
         columns_string = ','.join(
-            column.name for column in self._schema
+            '"%s"' % column.name for column in self.table
         )
         return 'SELECT {columns} from {source}'.format(
             columns=columns_string,
-            source=self._source,
+            source=self.source,
         )
-
-
-class QuerySet(collections.abc.Set, PureQuerySet):
-
-    def __init__(self, conn, schema, source):
-        super().__init__(schema, source)
-        self._conn = conn
-
-    def __iter__(self):
-        cur = self._conn.cursor()
-        cur.execute(self._select_query)
-
-    def __contains__(self, relation):
-        return relation in set(self)
-
-    def __len__(self):
-        return len(set(self))

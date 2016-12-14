@@ -12,8 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mir import protology
+import mir.sqlqs.queryset as queryset
 
 
-def test_quack():
-    assert protology.quack() == 'quack'
+def test_table_create(conn):
+    table = queryset.Table(
+        name='members',
+        columns=[
+            queryset.Column(name='name', constraints=['PRIMARY KEY']),
+            queryset.Column(name='subgroup', constraints=['NOT NULL']),
+        ],
+        constraints=[],
+    )
+    table.create(conn)
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master"
+                " WHERE type='table' AND name='members'")
+    assert len(cur.fetchall()) == 1
