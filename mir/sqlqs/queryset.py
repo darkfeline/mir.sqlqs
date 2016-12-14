@@ -49,6 +49,10 @@ class Table(namedtuple('Table', 'name,columns,constraints,row_class')):
         cur.execute(self._create_query)
 
     @property
+    def column_names(self):
+        return [column.name for column in self.columns]
+
+    @property
     def _create_query(self):
         """Return the corresponding create query."""
         return 'CREATE TABLE "{name}" ({defs})'.format(
@@ -114,7 +118,7 @@ class QuerySet(collections.abc.Set,
     def _select_query(self):
         """Return the select query this set represents."""
         columns_string = ','.join(
-            '"%s"' % column.name for column in self.table.columns
+            '"%s"' % column for column in self.table.column_names
         )
         query_parts = ['SELECT {columns} FROM {source}'.format(
             columns=columns_string,
