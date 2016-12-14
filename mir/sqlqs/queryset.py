@@ -29,10 +29,14 @@ class Table(namedtuple('Table', 'name,columns,constraints,row_class')):
     columns -- sequence of ColumnDef instances
     constraints -- sequence of constraint strings
 
-    Automatically generated:
+    Automatically generated fields:
 
     row_class -- namedtuple for table rows
     column_names -- list of column names
+
+    Methods:
+
+    create -- create table in database
     """
 
     __slots__ = ()
