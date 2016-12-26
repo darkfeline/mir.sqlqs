@@ -105,30 +105,81 @@ class QuerySet(collections.abc.Set,
 
     def __iter__(self):
         cur = self.conn.cursor()
-        cur.execute(self._select_query)
+        self._select_query.execute_with(cur)
         row_class = self.table.row_class
         for row in cur:
             yield row_class._make(row)
 
     def __contains__(self, row):
-        return row in set(self)
+        return row in frozenset(self)
 
     def __len__(self):
-        return len(set(self))
-
-    def __str__(self):
-        return self._select_query
+        return len(frozenset(self))
 
     @property
     def _select_query(self):
         """Return the select query this set represents."""
-        columns_string = ','.join(
+        column_names = ','.join(
             '"%s"' % column for column in self.table.column_names
         )
-        query_parts = ['SELECT {columns} FROM {source}'.format(
-            columns=columns_string,
-            source='"%s"' % self.table.name,
-        )]
+        query = Query('SELECT {columns} FROM "{source}"'.format(
+            columns=column_names,
+            source=self.table.name,
+        ))
         if self.where_expr:
-            query_parts.append('WHERE %s' % self.where_expr)
-        return ' '.join(query_parts)
+            query += ' WHERE '
+            query += self.where_expr
+        return query
+
+
+class Query(namedtuple('Query', 'sql,parameters')):
+
+    """Parametrized query"""
+
+    __slots__ = ()
+
+    def __new__(cls, sql, parameters=()):
+        parameters = tuple(parameters)
+        return super().__new__(cls, sql, parameters)
+
+    def __bool__(self):
+        return bool(self.sql) and bool(self.parameters)
+
+    def __add__(self, other):
+        try:
+            other = self._wrap_query(other)
+        except TypeError:
+            return NotImplemented
+        return type(self)(self.sql + other.sql,
+                          self.parameters + other.parameters)
+
+    def execute_with(self, cur):
+        """Execute query with cursor."""
+        return cur.execute(self.sql, self.parameters)
+
+    def _wrap_query(self, other):
+        """Get SQL representation of other."""
+        if isinstance(other, type(self)):
+            return other
+        elif isinstance(other, str):
+            return _WrappedString(other)
+        else:
+            raise TypeError
+
+
+class _WrappedString:
+
+    """Wraps string to present a Query interface."""
+
+    __slots__ = ('_string',)
+
+    def __init__(self, string):
+        self._string = string
+
+    @property
+    def sql(self):
+        return self._string
+
+    @property
+    def parameters(self):
+        return ()

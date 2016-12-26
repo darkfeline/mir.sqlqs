@@ -20,7 +20,7 @@ from mir.sqlqs import migration
 
 
 def _dummy(conn):
-    pass
+    pass  # pragma: no cover
 
 
 def test_repr():

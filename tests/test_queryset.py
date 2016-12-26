@@ -14,6 +14,8 @@
 
 from unittest import mock
 
+import pytest
+
 import mir.sqlqs.queryset as queryset
 
 
@@ -180,7 +182,7 @@ def test_queryset_not_contains(conn):
     assert table.row_class(name='maki', subgroup='printemps') not in qs
 
 
-def test_queryset_str():
+def test_queryset_query():
     table = queryset.Table(
         name='members',
         columns=[
@@ -194,4 +196,40 @@ def test_queryset_str():
         table=table,
     )
 
-    assert str(qs) == 'SELECT "name","subgroup" FROM "members"'
+    assert qs._select_query.sql == 'SELECT "name","subgroup" FROM "members"'
+
+
+def test_query_bool_false():
+    query = queryset.Query('', ())
+    assert not query
+
+
+def test_query_bool_true_sql():
+    query = queryset.Query('foo', ())
+    assert not query
+
+
+def test_query_bool_true_parameters():
+    query = queryset.Query('', ('foo',))
+    assert not query
+
+
+def test_query_add_query():
+    query1 = queryset.Query('foo', ('foo',))
+    query2 = queryset.Query('bar', ('bar',))
+    got = query1 + query2
+    assert got.sql == 'foobar'
+    assert got.parameters == ('foo', 'bar')
+
+
+def test_query_add_string():
+    query1 = queryset.Query('foo', ('foo',))
+    got = query1 + 'bar'
+    assert got.sql == 'foobar'
+    assert got.parameters == ('foo',)
+
+
+def test_query_add_int():
+    query1 = queryset.Query('foo', ('foo',))
+    with pytest.raises(TypeError):
+        query1 + 1
