@@ -16,7 +16,7 @@ from setuptools import setup
 
 setup(
     name='mir.sqlqs',
-    version='0.1.0',
+    version='0.2.0',
     description='Relational SQL API (SQL QuerySet)',
     long_description='',
     keywords='',
