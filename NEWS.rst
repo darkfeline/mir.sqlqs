@@ -6,6 +6,12 @@ This project uses `semantic versioning <http://semver.org/>`_.
 master
 ------
 
+Added
+^^^^^
+
+- Added Table class that acts like a mutable set interface to a SQL
+  table.
+
 Changed
 ^^^^^^^
 
