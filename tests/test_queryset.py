@@ -19,8 +19,49 @@ import pytest
 import mir.sqlqs.queryset as queryset
 
 
-def test_table_create(conn):
-    table = queryset.Table(
+def test_query_bool_false():
+    query = queryset.Query('', ())
+    assert not query
+
+
+def test_query_bool_true_sql():
+    query = queryset.Query('foo', ())
+    assert not query
+
+
+def test_query_bool_true_params():
+    query = queryset.Query('', ('foo',))
+    assert not query
+
+
+def test_query_add_query():
+    query1 = queryset.Query('foo', ('foo',))
+    query2 = queryset.Query('bar', ('bar',))
+    got = query1 + query2
+    assert got.sql == 'foobar'
+    assert got.params == ('foo', 'bar')
+
+
+def test_query_add_string():
+    query = queryset.Query('foo', ('foo',))
+    got = query + 'bar'
+    assert got.sql == 'foobar'
+    assert got.params == ('foo',)
+
+
+def test_query_add_wrong_type():
+    query = queryset.Query('foo', ('foo',))
+    with pytest.raises(TypeError):
+        query + 1
+
+
+def test_query_get_query():
+    query = queryset.Query('foo', ('foo',))
+    assert query is query.get_query()
+
+
+def test_schema_execute(conn):
+    schema = queryset.Schema(
         name='members',
         columns=[
             queryset.Column(name='name', constraints=['PRIMARY KEY']),
@@ -28,15 +69,15 @@ def test_table_create(conn):
         ],
         constraints=[],
     )
-    table.create(conn)
+    schema.execute_with(conn)
     cur = conn.cursor()
     cur.execute("SELECT name FROM sqlite_master"
                 " WHERE type='table' AND name='members'")
     assert len(cur.fetchall()) == 1
 
 
-def test_table_str():
-    table = queryset.Table(
+def test_schema_str():
+    schema = queryset.Schema(
         name='members',
         columns=[
             queryset.Column(name='name', constraints=['PRIMARY KEY']),
@@ -44,11 +85,17 @@ def test_table_str():
         ],
         constraints=[],
     )
-    assert str(table) == (
+    assert str(schema) == (
         'CREATE TABLE "members" ('
         '"name" PRIMARY KEY,'
         '"subgroup" NOT NULL'
         ')')
+
+
+def test_column_str():
+    col = queryset.Column('dorks', ('not nene',))
+    got = str(col)
+    assert got == '"dorks" not nene'
 
 
 def test_queryset_iter(conn):
@@ -60,7 +107,7 @@ def test_queryset_iter(conn):
     cur.execute("INSERT INTO members (name, subgroup) VALUES"
                 " ('maki', 'bibi'), ('umi', 'lily white')")
 
-    table = queryset.Table(
+    schema = queryset.Schema(
         name='members',
         columns=[
             queryset.Column(name='name', constraints=['PRIMARY KEY']),
@@ -70,12 +117,12 @@ def test_queryset_iter(conn):
     )
     qs = queryset.QuerySet(
         conn=conn,
-        table=table,
+        schema=schema,
     )
 
     assert set(qs) == {
-        table.row_class(name='maki', subgroup='bibi'),
-        table.row_class(name='umi', subgroup='lily white'),
+        schema.row_class(name='maki', subgroup='bibi'),
+        schema.row_class(name='umi', subgroup='lily white'),
     }
 
 
@@ -88,7 +135,7 @@ def test_queryset_filter(conn):
     cur.execute("INSERT INTO members (name, subgroup) VALUES"
                 " ('maki', 'bibi'), ('umi', 'lily white')")
 
-    table = queryset.Table(
+    schema = queryset.Schema(
         name='members',
         columns=[
             queryset.Column(name='name', constraints=['PRIMARY KEY']),
@@ -98,12 +145,12 @@ def test_queryset_filter(conn):
     )
     qs = queryset.QuerySet(
         conn=conn,
-        table=table,
+        schema=schema,
         where_expr="subgroup='bibi'",
     )
 
     assert set(qs) == {
-        table.row_class(name='maki', subgroup='bibi'),
+        schema.row_class(name='maki', subgroup='bibi'),
     }
 
 
@@ -116,7 +163,7 @@ def test_queryset_len(conn):
     cur.execute("INSERT INTO members (name, subgroup) VALUES"
                 " ('maki', 'bibi'), ('umi', 'lily white')")
 
-    table = queryset.Table(
+    schema = queryset.Schema(
         name='members',
         columns=[
             queryset.Column(name='name', constraints=['PRIMARY KEY']),
@@ -126,7 +173,7 @@ def test_queryset_len(conn):
     )
     qs = queryset.QuerySet(
         conn=conn,
-        table=table,
+        schema=schema,
     )
 
     assert len(qs) == 2
@@ -141,7 +188,7 @@ def test_queryset_contains(conn):
     cur.execute("INSERT INTO members (name, subgroup) VALUES"
                 " ('maki', 'bibi'), ('umi', 'lily white')")
 
-    table = queryset.Table(
+    schema = queryset.Schema(
         name='members',
         columns=[
             queryset.Column(name='name', constraints=['PRIMARY KEY']),
@@ -151,10 +198,10 @@ def test_queryset_contains(conn):
     )
     qs = queryset.QuerySet(
         conn=conn,
-        table=table,
+        schema=schema,
     )
 
-    assert table.row_class(name='maki', subgroup='bibi') in qs
+    assert schema.row_class(name='maki', subgroup='bibi') in qs
 
 
 def test_queryset_not_contains(conn):
@@ -166,7 +213,7 @@ def test_queryset_not_contains(conn):
     cur.execute("INSERT INTO members (name, subgroup) VALUES"
                 " ('maki', 'bibi'), ('umi', 'lily white')")
 
-    table = queryset.Table(
+    schema = queryset.Schema(
         name='members',
         columns=[
             queryset.Column(name='name', constraints=['PRIMARY KEY']),
@@ -176,14 +223,14 @@ def test_queryset_not_contains(conn):
     )
     qs = queryset.QuerySet(
         conn=conn,
-        table=table,
+        schema=schema,
     )
 
-    assert table.row_class(name='maki', subgroup='printemps') not in qs
+    assert schema.row_class(name='maki', subgroup='printemps') not in qs
 
 
 def test_queryset_query():
-    table = queryset.Table(
+    schema = queryset.Schema(
         name='members',
         columns=[
             queryset.Column(name='name', constraints=['PRIMARY KEY']),
@@ -193,43 +240,22 @@ def test_queryset_query():
     )
     qs = queryset.QuerySet(
         conn=mock.sentinel.dummy,
-        table=table,
+        schema=schema,
     )
 
-    assert qs._select_query.sql == 'SELECT "name","subgroup" FROM "members"'
+    assert qs.get_query().sql == 'SELECT "name","subgroup" FROM "members"'
 
 
-def test_query_bool_false():
-    query = queryset.Query('', ())
-    assert not query
+def test_escape_string():
+    got = queryset._escape_string('hello')
+    assert got == "'hello'"
 
 
-def test_query_bool_true_sql():
-    query = queryset.Query('foo', ())
-    assert not query
+def test_escape_string_with_quotes():
+    got = queryset._escape_string("sanzen'in")
+    assert got == "'sanzen''in'"
 
 
-def test_query_bool_true_parameters():
-    query = queryset.Query('', ('foo',))
-    assert not query
-
-
-def test_query_add_query():
-    query1 = queryset.Query('foo', ('foo',))
-    query2 = queryset.Query('bar', ('bar',))
-    got = query1 + query2
-    assert got.sql == 'foobar'
-    assert got.parameters == ('foo', 'bar')
-
-
-def test_query_add_string():
-    query1 = queryset.Query('foo', ('foo',))
-    got = query1 + 'bar'
-    assert got.sql == 'foobar'
-    assert got.parameters == ('foo',)
-
-
-def test_query_add_int():
-    query1 = queryset.Query('foo', ('foo',))
-    with pytest.raises(TypeError):
-        query1 + 1
+def test_escape_name():
+    got = queryset._escape_name('hello')
+    assert got == '"hello"'

@@ -14,59 +14,153 @@
 
 """Relational SQL QuerySets"""
 
+import abc
 from collections import namedtuple
 import collections.abc
 import itertools
 
 
-class Table(namedtuple('Table', 'name,columns,constraints,row_class')):
+class Executable(metaclass=abc.ABCMeta):
 
-    """Table schema
+    """SQL executable object interface.
 
-    Fields:
+    Implementing classes must implement the get_query() method, which
+    returns the parametrized query that would be executed.
+    """
 
-    name -- table name string
-    columns -- sequence of ColumnDef instances
-    constraints -- sequence of constraint strings
+    @abc.abstractmethod
+    def get_query(self) -> 'Query':
+        """Get the associated query.
 
-    Automatically generated fields:
+        The returned query can be any object with the attributes sql and
+        params set like a Query object.
 
-    row_class -- namedtuple for table rows
-    column_names -- list of column names
+        This is intended to be used for other classes interfacing with
+        Executable classes.  For executing the query, use the
+        execute_with() method instead.
+        """
+        raise NotImplementedError
 
-    Methods:
+    def execute_with(self, cur):
+        """Execute query with cursor."""
+        query = self.get_query()
+        return cur.execute(query.sql, query.params)
 
-    create -- create table in database
+
+class Query(Executable, namedtuple('Query', 'sql,params')):
+
+    """Parametrized query.
+
+    Attributes:
+
+    sql -- SQL parametrized query string
+    params -- Parameters
     """
 
     __slots__ = ()
 
-    def __new__(cls, name, columns, constraints):
-        row_class = namedtuple(name, [column.name for column in columns])
-        return super().__new__(cls, name, columns, constraints, row_class)
+    def __new__(cls, sql, params=()):
+        return super().__new__(cls, sql, params)
+
+    def __bool__(self):
+        return bool(self.sql) and bool(self.params)
+
+    def __add__(self, other):
+        if isinstance(other, Executable):
+            query = other.get_query()
+            return type(self)(self.sql + query.sql,
+                              self.params + query.params)
+        elif isinstance(other, str):
+            return self + type(self)(other)
+        else:
+            return NotImplemented
+
+    def get_query(self):
+        return self
+
+
+class SimpleSQL(Executable):
+
+    """Interface for objects with a non-parametrized SQL representation.
+
+    Abstract properties:
+
+    sql -- SQL representation (abstract)
+    """
 
     def __str__(self):
-        return self._create_query
+        return self.sql
 
-    def create(self, conn):
-        """Create a table with this schema."""
-        cur = conn.cursor()
-        cur.execute(self._create_query)
+    @property
+    @abc.abstractmethod
+    def sql(self):
+        raise NotImplementedError
+
+    @property
+    def params(self):
+        return ()
+
+    def get_query(self):
+        return self
+
+    def execute_with(self, cur):
+        cur.execute(self.sql)
+
+
+class Schema(SimpleSQL):
+
+    """Table schema
+
+    Attributes:
+
+    name -- Table name
+    row_class -- namedtuple class for table rows
+
+    Methods:
+
+    make_row -- Make row tuple
+    """
+
+    def __init__(self, name, columns, constraints):
+        self.name = name
+        self._columns = columns
+        self._constraints = constraints
+        self.row_class = namedtuple(name, (column.name for column in columns))
+
+    def __repr__(self):
+        return ('{cls}({this.name}, {this._columns},'
+                ' {this._constraints})'.format(
+                    cls=type(self).__qualname__,
+                    this=self,
+                ))
 
     @property
     def column_names(self):
-        return [column.name for column in self.columns]
+        return tuple(column.name for column in self._columns)
 
     @property
-    def _create_query(self):
-        """Return the corresponding create query."""
-        return 'CREATE TABLE "{name}" ({defs})'.format(
-            name=self.name,
-            defs=','.join(itertools.chain(
-                (str(column) for column in self.columns),
-                self.constraints,
-            )),
+    def column_names_sql(self):
+        return ','.join(
+            _escape_name(column) for column in self.column_names
         )
+
+    @property
+    def _column_defs(self):
+        return ','.join(itertools.chain(
+            (str(column) for column in self._columns),
+            self._constraints,
+        ))
+
+    @property
+    def sql(self):
+        return 'CREATE TABLE {name} ({defs})'.format(
+            name=_escape_name(self.name),
+            defs=self._column_defs,
+        )
+
+    def make_row(self, iterable):
+        """Make row tuple."""
+        return self.row_class._make(iterable)
 
 
 class Column(namedtuple('Column', 'name,constraints')):
@@ -82,33 +176,57 @@ class Column(namedtuple('Column', 'name,constraints')):
     __slots__ = ()
 
     def __str__(self):
-        return ' '.join(itertools.chain(('"%s"' % self.name,),
+        return ' '.join(itertools.chain((_escape_name(self.name),),
                                         self.constraints))
 
 
-class QuerySet(collections.abc.Set,
-               namedtuple('QuerySet', 'conn,table,where_expr')):
+class QuerySet(collections.abc.Set, Executable):
 
-    """SQL queries represented as sets
+    """SQL query as a set"""
 
-    Fields:
-
-    conn -- database connection object
-    table -- Table instance
-    where_expr -- WHERE expression
-    """
-
-    __slots__ = ()
-
-    def __new__(cls, conn, table, where_expr=''):
-        return super().__new__(cls, conn, table, where_expr)
+    def __init__(self, conn, schema, where_expr=''):
+        self._conn = conn
+        self._schema = schema
+        self._where_expr = where_expr
 
     def __iter__(self):
-        cur = self.conn.cursor()
-        self._select_query.execute_with(cur)
-        row_class = self.table.row_class
-        for row in cur:
-            yield row_class._make(row)
+        cur = self._conn.cursor()
+        self.execute_with(cur)
+        make_row = self._schema.make_row
+        yield from (make_row(row) for row in cur)
+
+    def __contains__(self, row):
+        return row in frozenset(self)
+
+    def __len__(self):
+        return len(frozenset(self))
+
+    def get_query(self):
+        """Return the select query this set represents."""
+        query = Query('SELECT {columns} FROM {source}'.format(
+            columns=self._schema.column_names_sql,
+            source=_escape_name(self._schema.name),
+        ))
+        if self._where_expr:
+            query += ' WHERE '
+            query += self._where_expr
+        return query
+
+
+class Table(collections.abc.MutableSet, QuerySet, SimpleSQL):
+
+    """SQL table as a set."""
+
+    def __init__(self, conn, schema):
+        """Initialize instance."""
+        self._conn = conn
+        self._schema = schema
+
+    def __iter__(self):
+        cur = self._conn.cursor()
+        self.execute_with(cur)
+        make_row = self._schema.make_row
+        yield from (make_row(row) for row in cur)
 
     def __contains__(self, row):
         return row in frozenset(self)
@@ -117,69 +235,23 @@ class QuerySet(collections.abc.Set,
         return len(frozenset(self))
 
     @property
-    def _select_query(self):
-        """Return the select query this set represents."""
-        column_names = ','.join(
-            '"%s"' % column for column in self.table.column_names
-        )
-        query = Query('SELECT {columns} FROM "{source}"'.format(
-            columns=column_names,
-            source=self.table.name,
-        ))
-        if self.where_expr:
-            query += ' WHERE '
-            query += self.where_expr
-        return query
-
-
-class Query(namedtuple('Query', 'sql,parameters')):
-
-    """Parametrized query"""
-
-    __slots__ = ()
-
-    def __new__(cls, sql, parameters=()):
-        parameters = tuple(parameters)
-        return super().__new__(cls, sql, parameters)
-
-    def __bool__(self):
-        return bool(self.sql) and bool(self.parameters)
-
-    def __add__(self, other):
-        try:
-            other = self._wrap_query(other)
-        except TypeError:
-            return NotImplemented
-        return type(self)(self.sql + other.sql,
-                          self.parameters + other.parameters)
-
-    def execute_with(self, cur):
-        """Execute query with cursor."""
-        return cur.execute(self.sql, self.parameters)
-
-    def _wrap_query(self, other):
-        """Get SQL representation of other."""
-        if isinstance(other, type(self)):
-            return other
-        elif isinstance(other, str):
-            return _WrappedString(other)
-        else:
-            raise TypeError
-
-
-class _WrappedString:
-
-    """Wraps string to present a Query interface."""
-
-    __slots__ = ('_string',)
-
-    def __init__(self, string):
-        self._string = string
-
-    @property
     def sql(self):
-        return self._string
+        return 'SELECT * FROM {source}'.format(
+            source=_escape_name(self._schema.name),
+        )
 
-    @property
-    def parameters(self):
-        return ()
+    def add():
+        ...
+
+    def discard():
+        ...
+
+
+def _escape_string(string):
+    """Escape SQL string."""
+    return "'%s'" % string.replace("'", "''")
+
+
+def _escape_name(string):
+    """Escape SQL identifier."""
+    return '"%s"' % string
