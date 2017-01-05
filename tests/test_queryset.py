@@ -74,6 +74,36 @@ def test_query_get_query():
     assert query is query.get_query()
 
 
+def test_schema_primary_key():
+    got = queryset.Schema._find_primary_key(
+        [
+            queryset.Column(name='name', constraints=['PRIMARY KEY']),
+            queryset.Column(name='subgroup', constraints=['NOT NULL']),
+        ],
+    )
+    assert got == 'name'
+
+
+def test_schema_multiple_primary_key():
+    with pytest.raises(ValueError):
+        queryset.Schema._find_primary_key(
+            [
+                queryset.Column(name='name', constraints=['PRIMARY KEY']),
+                queryset.Column(name='subgroup', constraints=['PRIMARY KEY']),
+            ]
+        )
+
+
+def test_schema_missing_primary_key():
+    got = queryset.Schema._find_primary_key(
+            [
+                queryset.Column(name='name', constraints=[]),
+                queryset.Column(name='subgroup', constraints=[]),
+            ]
+        )
+    assert got == 'rowid'
+
+
 def test_schema_execute(conn):
     schema = queryset.Schema(
         name='members',

@@ -132,6 +132,7 @@ class Schema(SimpleSQL):
         self.primary_key = self._find_primary_key(columns)
         self.row_class = namedtuple(name, (column.name for column in columns))
 
+    @classmethod
     def _find_primary_key(self, columns):
         """Find the primary key column name."""
         primary_key_cols = [col for col in columns if col.primary_key]
