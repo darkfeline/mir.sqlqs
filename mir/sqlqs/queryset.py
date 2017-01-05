@@ -186,6 +186,13 @@ class QuerySet(collections.abc.Set, Executable):
         self._schema = schema
         self._where_expr = where_expr
 
+    def __repr__(self):
+        return ('{cls}({this._conn!r}, {this._schema!r},'
+                ' {this._where_expr!r})'.format(
+                    cls=type(self).__qualname__,
+                    this=self,
+                ))
+
     def __iter__(self):
         cur = self._conn.cursor()
         self.execute_with(cur)

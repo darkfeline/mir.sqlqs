@@ -111,6 +111,24 @@ def test_column_str():
     assert got == '"dorks" not nene'
 
 
+def test_queryset_repr():
+    schema = queryset.Schema(
+        name='members',
+        columns=[
+            queryset.Column(name='name', constraints=['PRIMARY KEY']),
+            queryset.Column(name='subgroup', constraints=['NOT NULL']),
+        ],
+        constraints=[],
+    )
+    qs = queryset.QuerySet(
+        conn=mock.sentinel.conn,
+        schema=schema,
+    )
+    with mock.patch.object(queryset.Schema, '__repr__') as schema_repr:
+        schema_repr.return_value = 'schema'
+        assert repr(qs) == "QuerySet(sentinel.conn, schema, '')"
+
+
 def test_queryset_iter(conn):
     cur = conn.cursor()
     cur.execute("CREATE TABLE members ("
