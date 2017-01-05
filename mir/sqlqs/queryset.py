@@ -17,9 +17,7 @@
 import abc
 from collections import namedtuple
 import collections.abc
-import functools
 import itertools
-import operator
 
 
 class Executable(metaclass=abc.ABCMeta):
@@ -256,23 +254,55 @@ class Table(collections.abc.MutableSet, QuerySet, SimpleSQL):
 
     def add(self, row):
         """Upsert."""
+        cur = self._conn.cursor()
+        with self._conn:
+            self._get_update_query(row).execute_with(cur)
+            if self._conn.changes() == 0:
+                self._get_insert_query(row).execute_with(cur)
 
     def discard(self, row):
-        query = self._get_discard_query(row)
         cur = self._conn.cursor()
-        query.execute_with(cur)
+        with self._conn:
+            self._get_discard_query(row).execute_with(cur)
+
+    def _get_update_query(self, row):
+        query = Query(
+            'UPDATE {table} SET '.format(
+                table=_escape_name(self._schema.name),
+            ))
+        query += self._get_joined_cols(row)
+        query += Query(
+            ' WHERE {}=?'
+            .format(_escape_name(self._schema.primary_key)),
+            getattr(row, self._schema.primary_key)
+        )
+        return query
+
+    def _get_insert_query(self, row):
+        sql = 'INSERT INTO {table} ({cols}) VALUES ({vals})'.format(
+            table=_escape_name(self._schema.name),
+            cols=self._schema.column_names_sql,
+            vals=','.join('?' for _ in row),
+        )
+        return Query(sql, row)
 
     def _get_discard_query(self, row):
         query = Query(
             'DELETE FROM {table} WHERE '.format(
                 table=_escape_name(self._schema.name),
             ))
-        col_queries = (
-            Query('%s=?' % _escape_name(field), value)
-            for field, value in zip(self._schema.column_names, row)
-        )
-        query += functools.reduce(operator.and_, col_queries, Query(''))
+        query += self._get_anded_cols(row)
         return query
+
+    def _get_joined_cols(self, row):
+        sql = ','.join('%s=?' % _escape_name(col)
+                       for col in self._schema.column_names)
+        return Query(sql, row)
+
+    def _get_anded_cols(self, row):
+        sql = ' AND '.join('%s=?' % _escape_name(col)
+                           for col in self._schema.column_names)
+        return Query(sql, row)
 
 
 def _escape_string(string):
