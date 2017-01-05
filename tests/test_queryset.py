@@ -291,6 +291,82 @@ def test_queryset_query():
     assert qs.get_query().sql == 'SELECT "name","subgroup" FROM "members"'
 
 
+def test_table_add(conn):
+    schema = queryset.Schema(
+        name='members',
+        columns=[
+            queryset.Column(name='name', constraints=['PRIMARY KEY']),
+            queryset.Column(name='subgroup', constraints=['NOT NULL']),
+        ],
+        constraints=[],
+    )
+    table = queryset.Table(
+        conn=conn,
+        schema=schema,
+    )
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE members ("
+                "name PRIMARY KEY,"
+                "subgroup NOT NULL"
+                ")")
+
+    table.add(schema.row_class('maki', 'bibi'))
+
+    cur.execute("SELECT * FROM members WHERE name='maki'")
+    assert len(list(cur)) == 1
+
+
+def test_table_discard(conn):
+    schema = queryset.Schema(
+        name='members',
+        columns=[
+            queryset.Column(name='name', constraints=['PRIMARY KEY']),
+            queryset.Column(name='subgroup', constraints=['NOT NULL']),
+        ],
+        constraints=[],
+    )
+    table = queryset.Table(
+        conn=conn,
+        schema=schema,
+    )
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE members ("
+                "name PRIMARY KEY,"
+                "subgroup NOT NULL"
+                ")")
+    cur.execute("INSERT INTO members (name, subgroup) VALUES ('maki', 'bibi')")
+
+    table.discard(schema.row_class('maki', 'bibi'))
+
+    cur.execute("SELECT * FROM members WHERE name='maki'")
+    assert not list(cur)
+
+
+def test_table_discard_missing(conn):
+    schema = queryset.Schema(
+        name='members',
+        columns=[
+            queryset.Column(name='name', constraints=['PRIMARY KEY']),
+            queryset.Column(name='subgroup', constraints=['NOT NULL']),
+        ],
+        constraints=[],
+    )
+    table = queryset.Table(
+        conn=conn,
+        schema=schema,
+    )
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE members ("
+                "name PRIMARY KEY,"
+                "subgroup NOT NULL"
+                ")")
+
+    table.discard(schema.row_class('maki', 'bibi'))
+
+    cur.execute("SELECT * FROM members WHERE name='maki'")
+    assert not list(cur)
+
+
 def test_escape_string():
     got = queryset._escape_string('hello')
     assert got == "'hello'"

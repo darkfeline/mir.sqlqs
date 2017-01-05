@@ -252,6 +252,10 @@ class Table(collections.abc.MutableSet, QuerySet, SimpleSQL):
     def __init__(self, conn, schema):
         super().__init__(conn, schema)
 
+    @property
+    def sql(self):
+        return self._schema.sql
+
     def add(self, row):
         """Upsert."""
         cur = self._conn.cursor()
@@ -274,7 +278,7 @@ class Table(collections.abc.MutableSet, QuerySet, SimpleSQL):
         query += Query(
             ' WHERE {}=?'
             .format(_escape_name(self._schema.primary_key)),
-            getattr(row, self._schema.primary_key)
+            (getattr(row, self._schema.primary_key),),
         )
         return query
 
