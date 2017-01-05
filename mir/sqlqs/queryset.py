@@ -17,7 +17,9 @@
 import abc
 from collections import namedtuple
 import collections.abc
+import functools
 import itertools
+import operator
 
 
 class Executable(metaclass=abc.ABCMeta):
@@ -117,6 +119,7 @@ class Schema(SimpleSQL):
     Attributes:
 
     name -- Table name
+    primary_key -- Primary key column name
     row_class -- namedtuple class for table rows
 
     Methods:
@@ -128,7 +131,19 @@ class Schema(SimpleSQL):
         self.name = name
         self._columns = columns
         self._constraints = constraints
+        self.primary_key = self._find_primary_key(columns)
         self.row_class = namedtuple(name, (column.name for column in columns))
+
+    def _find_primary_key(self, columns):
+        """Find the primary key column name."""
+        primary_key_cols = [col for col in columns if col.primary_key]
+        if len(primary_key_cols) > 1:
+            raise ValueError('More than one primary key: {!r}'
+                             .format(columns))
+        elif primary_key_cols:
+            return primary_key_cols[0].name
+        else:
+            return 'rowid'
 
     def __repr__(self):
         return ('{cls}({this.name!r}, {this._columns!r},'
@@ -174,6 +189,10 @@ class Column(namedtuple('Column', 'name,constraints')):
 
     name -- column name as a string
     constraints -- sequence of constraint strings
+
+    Properties:
+
+    primary_key
     """
 
     __slots__ = ()
@@ -181,6 +200,11 @@ class Column(namedtuple('Column', 'name,constraints')):
     def __str__(self):
         return ' '.join(itertools.chain((_escape_name(self.name),),
                                         self.constraints))
+
+    @property
+    def primary_key(self):
+        return any('primary key' in constraint.lower()
+                   for constraint in self.constraints)
 
 
 class QuerySet(collections.abc.Set, Executable):
@@ -231,14 +255,24 @@ class Table(collections.abc.MutableSet, QuerySet, SimpleSQL):
         super().__init__(conn, schema)
 
     def add(self, row):
-        ...
+        """Upsert."""
 
     def discard(self, row):
+        query = self._get_discard_query(row)
+        cur = self._conn.cursor()
+        query.execute_with(cur)
+
+    def _get_discard_query(self, row):
         query = Query(
             'DELETE FROM {table} WHERE '.format(
                 table=_escape_name(self._schema.name),
             ))
-        ...
+        col_queries = (
+            Query('%s=?' % _escape_name(field), value)
+            for field, value in zip(self._schema.column_names, row)
+        )
+        query += functools.reduce(operator.and_, col_queries, Query(''))
+        return query
 
 
 def _escape_string(string):
