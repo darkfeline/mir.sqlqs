@@ -346,6 +346,33 @@ def test_table_add(conn):
     assert len(list(cur)) == 1
 
 
+def test_table_add_update(conn):
+    schema = queryset.Schema(
+        name='members',
+        columns=[
+            queryset.Column(name='name', constraints=['PRIMARY KEY']),
+            queryset.Column(name='subgroup', constraints=['NOT NULL']),
+        ],
+        constraints=[],
+    )
+    table = queryset.Table(
+        conn=conn,
+        schema=schema,
+    )
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE members ("
+                "name PRIMARY KEY,"
+                "subgroup NOT NULL"
+                ")")
+    cur.execute("INSERT INTO members (name, subgroup) VALUES"
+                " ('maki', 'printemps')")
+
+    table.add(schema.row_class('maki', 'bibi'))
+
+    cur.execute("SELECT * FROM members WHERE name='maki'")
+    assert list(cur) == [('maki', 'bibi')]
+
+
 def test_table_discard(conn):
     schema = queryset.Schema(
         name='members',
@@ -370,6 +397,15 @@ def test_table_discard(conn):
 
     cur.execute("SELECT * FROM members WHERE name='maki'")
     assert not list(cur)
+
+
+def test_table_sql():
+    schema = mock.create_autospec(queryset.Schema, instance=True)
+    table = queryset.Table(
+        conn=mock.sentinel.conn,
+        schema=schema,
+    )
+    assert table.sql == schema.sql
 
 
 def test_table_discard_missing(conn):
