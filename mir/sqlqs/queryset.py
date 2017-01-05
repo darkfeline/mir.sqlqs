@@ -103,9 +103,6 @@ class SimpleSQL(Executable):
     def get_query(self):
         return self
 
-    def execute_with(self, cur):
-        cur.execute(self.sql)
-
 
 class Schema(SimpleSQL):
 
