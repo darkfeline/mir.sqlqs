@@ -92,6 +92,19 @@ def test_schema_str():
         ')')
 
 
+def test_schema_repr():
+    schema = queryset.Schema(
+        name='members',
+        columns=[
+            queryset.Column(name='name', constraints=['PRIMARY KEY']),
+            queryset.Column(name='subgroup', constraints=['NOT NULL']),
+        ],
+        constraints=[],
+    )
+    with mock.patch.object(queryset.Column, '__repr__', return_value='foo'):
+        assert repr(schema) == "Schema('members', [foo, foo], [])"
+
+
 def test_column_str():
     col = queryset.Column('dorks', ('not nene',))
     got = str(col)

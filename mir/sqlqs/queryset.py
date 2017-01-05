@@ -125,8 +125,8 @@ class Schema(SimpleSQL):
         self.row_class = namedtuple(name, (column.name for column in columns))
 
     def __repr__(self):
-        return ('{cls}({this.name}, {this._columns},'
-                ' {this._constraints})'.format(
+        return ('{cls}({this.name!r}, {this._columns!r},'
+                ' {this._constraints!r})'.format(
                     cls=type(self).__qualname__,
                     this=self,
                 ))
@@ -218,18 +218,6 @@ class Table(collections.abc.MutableSet, QuerySet, SimpleSQL):
         """Initialize instance."""
         self._conn = conn
         self._schema = schema
-
-    def __iter__(self):
-        cur = self._conn.cursor()
-        self.execute_with(cur)
-        make_row = self._schema.make_row
-        yield from (make_row(row) for row in cur)
-
-    def __contains__(self, row):
-        return row in frozenset(self)
-
-    def __len__(self):
-        return len(frozenset(self))
 
     @property
     def sql(self):
