@@ -83,8 +83,8 @@ def test_schema_execute(conn):
         ],
         constraints=[],
     )
-    schema.execute_with(conn)
     cur = conn.cursor()
+    schema.execute_with(cur)
     cur.execute("SELECT name FROM sqlite_master"
                 " WHERE type='table' AND name='members'")
     assert len(cur.fetchall()) == 1

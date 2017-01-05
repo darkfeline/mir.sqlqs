@@ -31,5 +31,5 @@ setup(
     ],
 
     packages=['mir.sqlqs'],
-    install_requires=[],
+    install_requires=['apsw'],
 )

@@ -1,6 +1,6 @@
-import sqlite3
 import pathlib
 
+import apsw
 import pytest
 
 
@@ -12,4 +12,4 @@ def tmpdir(tmpdir_factory):
 
 @pytest.fixture
 def conn():
-    return sqlite3.connect(':memory:', isolation_level=None)
+    return apsw.Connection(':memory:')
