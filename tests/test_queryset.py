@@ -55,6 +55,20 @@ def test_query_add_wrong_type():
         query + 1
 
 
+def test_query_and():
+    query = queryset.Query('foo', ('foo',))
+    got = query & 'bar'
+    assert got.sql == 'foo AND bar'
+    assert got.params == ('foo',)
+
+
+def test_query_or():
+    query = queryset.Query('foo', ('foo',))
+    got = query | 'bar'
+    assert got.sql == 'foo OR bar'
+    assert got.params == ('foo',)
+
+
 def test_query_get_query():
     query = queryset.Query('foo', ('foo',))
     assert query is query.get_query()

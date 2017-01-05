@@ -75,6 +75,12 @@ class Query(Executable, namedtuple('Query', 'sql,params')):
         else:
             return NotImplemented
 
+    def __and__(self, other):
+        return self + ' AND ' + other
+
+    def __or__(self, other):
+        return self + ' OR ' + other
+
     def get_query(self):
         return self
 
@@ -222,20 +228,16 @@ class Table(collections.abc.MutableSet, QuerySet, SimpleSQL):
     """SQL table as a set."""
 
     def __init__(self, conn, schema):
-        """Initialize instance."""
-        self._conn = conn
-        self._schema = schema
+        super().__init__(conn, schema)
 
-    @property
-    def sql(self):
-        return 'SELECT * FROM {source}'.format(
-            source=_escape_name(self._schema.name),
-        )
-
-    def add():
+    def add(self, row):
         ...
 
-    def discard():
+    def discard(self, row):
+        query = Query(
+            'DELETE FROM {table} WHERE '.format(
+                table=_escape_name(self._schema.name),
+            ))
         ...
 
 
