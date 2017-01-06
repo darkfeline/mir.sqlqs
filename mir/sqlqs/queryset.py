@@ -181,7 +181,7 @@ class Schema(SimpleSQL):
         return self.row_class._make(iterable)
 
 
-class Column(namedtuple('Column', 'name,constraints')):
+class Column:
 
     """Column definition
 
@@ -195,7 +195,9 @@ class Column(namedtuple('Column', 'name,constraints')):
     primary_key
     """
 
-    __slots__ = ()
+    def __init__(self, name, constraints=()):
+        self.name = name
+        self.constraints = constraints
 
     def __str__(self):
         return ' '.join(itertools.chain((_escape_name(self.name),),
