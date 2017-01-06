@@ -110,6 +110,8 @@ class Schema(SimpleSQL):
     name -- Table name
     primary_key -- Primary key column name
     row_class -- namedtuple class for table rows
+    column_names -- Tuple of column names
+    column_names_sql -- Column names formatted as SQL: '"foo", "bar"'
 
     Methods:
 
