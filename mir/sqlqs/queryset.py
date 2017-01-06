@@ -85,21 +85,20 @@ class SimpleSQL(Executable):
 
     """Interface for objects with a non-parametrized SQL representation.
 
-    Abstract properties:
+    Abstract methods:
 
-    sql -- SQL representation (abstract)
+    _get_sql -- Get SQL to execute
     """
 
     def __str__(self):
-        return self.sql
+        return self._get_sql()
 
-    @property
     @abc.abstractmethod
-    def sql(self):
+    def _get_sql(self):
         raise NotImplementedError
 
     def _get_query(self):
-        return Query(self.sql)
+        return Query(self._get_sql())
 
 
 class Schema(SimpleSQL):
@@ -160,8 +159,7 @@ class Schema(SimpleSQL):
             self._constraints,
         ))
 
-    @property
-    def sql(self):
+    def _get_sql(self):
         return 'CREATE TABLE {name} ({defs})'.format(
             name=_escape_name(self.name),
             defs=self._column_defs,
@@ -246,9 +244,8 @@ class Table(collections.abc.MutableSet, QuerySet, SimpleSQL):
     def __init__(self, conn, schema):
         super().__init__(conn, schema)
 
-    @property
-    def sql(self):
-        return self._schema.sql
+    def _get_sql(self):
+        return self._schema._get_sql()
 
     def add(self, row):
         """Upsert."""

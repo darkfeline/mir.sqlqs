@@ -405,7 +405,7 @@ def test_table_sql():
         conn=mock.sentinel.conn,
         schema=schema,
     )
-    assert table.sql == schema.sql
+    assert table._get_sql() == schema._get_sql()
 
 
 def test_table_discard_missing(conn):
