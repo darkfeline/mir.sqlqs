@@ -161,15 +161,15 @@ class Schema(SimpleSQL):
             self._constraints,
         ))
 
+    def make_row(self, iterable):
+        """Make row tuple."""
+        return self.row_class._make(iterable)
+
     def _get_sql(self):
         return 'CREATE TABLE {name} ({defs})'.format(
             name=_escape_name(self.name),
             defs=self._column_defs,
         )
-
-    def make_row(self, iterable):
-        """Make row tuple."""
-        return self.row_class._make(iterable)
 
 
 class Column:
