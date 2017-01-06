@@ -3,6 +3,7 @@ machine:
     version: 3.5.2
 dependencies:
   override:
+    - apt-get install python-apsw
     - pip3 install -r requirements.txt
     - pip3 install -e .
 test:
