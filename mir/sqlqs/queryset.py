@@ -98,12 +98,8 @@ class SimpleSQL(Executable):
     def sql(self):
         raise NotImplementedError
 
-    @property
-    def params(self):
-        return ()
-
     def _get_query(self):
-        return self
+        return Query(self.sql)
 
 
 class Schema(SimpleSQL):
