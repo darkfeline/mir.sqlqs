@@ -24,26 +24,22 @@ class Executable(metaclass=abc.ABCMeta):
 
     """SQL executable object interface.
 
-    Implementing classes must implement the get_query() method, which
+    Implementing classes must implement the _get_query() method, which
     returns the parametrized query that would be executed.
     """
 
     @abc.abstractmethod
-    def get_query(self) -> 'Query':
+    def _get_query(self) -> 'Query':
         """Get the associated query.
 
         The returned query can be any object with the attributes sql and
         params set like a Query object.
-
-        This is intended to be used for other classes interfacing with
-        Executable classes.  For executing the query, use the
-        execute_with() method instead.
         """
         raise NotImplementedError
 
     def execute_with(self, cur):
         """Execute query with cursor."""
-        query = self.get_query()
+        query = self._get_query()
         return cur.execute(query.sql, query.params)
 
 
@@ -67,10 +63,9 @@ class Query(Executable):
         return bool(self.sql) and bool(self.params)
 
     def __add__(self, other):
-        if isinstance(other, Executable):
-            query = other.get_query()
-            return type(self)(self.sql + query.sql,
-                              self.params + query.params)
+        if isinstance(other, type(self)):
+            return type(self)(self.sql + other.sql,
+                              self.params + other.params)
         elif isinstance(other, str):
             return self + type(self)(other)
         else:
@@ -82,7 +77,7 @@ class Query(Executable):
     def __or__(self, other):
         return self + ' OR ' + other
 
-    def get_query(self):
+    def _get_query(self):
         return self
 
 
@@ -107,7 +102,7 @@ class SimpleSQL(Executable):
     def params(self):
         return ()
 
-    def get_query(self):
+    def _get_query(self):
         return self
 
 
@@ -237,8 +232,7 @@ class QuerySet(collections.abc.Set, Executable):
     def __len__(self):
         return len(frozenset(self))
 
-    def get_query(self):
-        """Return the select query this set represents."""
+    def _get_query(self):
         query = Query('SELECT {columns} FROM {source}'.format(
             columns=self._schema.column_names_sql,
             source=_escape_name(self._schema.name),

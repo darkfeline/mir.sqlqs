@@ -71,7 +71,7 @@ def test_query_or():
 
 def test_query_get_query():
     query = queryset.Query('foo', ('foo',))
-    assert query is query.get_query()
+    assert query is query._get_query()
 
 
 def test_schema_primary_key():
@@ -318,7 +318,7 @@ def test_queryset_query():
         schema=schema,
     )
 
-    assert qs.get_query().sql == 'SELECT "name","subgroup" FROM "members"'
+    assert qs._get_query().sql == 'SELECT "name","subgroup" FROM "members"'
 
 
 def test_table_add(conn):
