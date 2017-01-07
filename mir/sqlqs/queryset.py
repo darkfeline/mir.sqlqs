@@ -59,6 +59,10 @@ class Query(Executable):
         self.sql = sql
         self.params = params
 
+    def __repr__(self):
+        cls = type(self).__qualname__
+        return f'{cls}({self.sql!r}, {self.params!r})'
+
     def __bool__(self):
         return bool(self.sql) and bool(self.params)
 
@@ -130,19 +134,16 @@ class Schema(SimpleSQL):
         """Find the primary key column name."""
         primary_key_cols = [col for col in columns if col.primary_key]
         if len(primary_key_cols) > 1:
-            raise ValueError('More than one primary key: {!r}'
-                             .format(columns))
+            raise ValueError('More than one primary key: {columns!r}')
         elif primary_key_cols:
             return primary_key_cols[0].name
         else:
             return 'rowid'
 
     def __repr__(self):
-        return ('{cls}({this.name!r}, {this._columns!r},'
-                ' {this._constraints!r})'.format(
-                    cls=type(self).__qualname__,
-                    this=self,
-                ))
+        cls = type(self).__qualname__
+        return (f'{cls}({self.name!r}, {self._columns!r},'
+                f' {self._constraints!r})')
 
     @property
     def column_names(self):
@@ -166,10 +167,7 @@ class Schema(SimpleSQL):
         return self.row_class._make(iterable)
 
     def _get_sql(self):
-        return 'CREATE TABLE {name} ({defs})'.format(
-            name=_escape_name(self.name),
-            defs=self._column_defs,
-        )
+        return f'CREATE TABLE {_escape_name(self.name)} ({self._column_defs})'
 
 
 class Column:
@@ -210,11 +208,9 @@ class QuerySet(collections.abc.Set, Executable):
         self._where_expr = where_expr
 
     def __repr__(self):
-        return ('{cls}({this._conn!r}, {this._schema!r},'
-                ' {this._where_expr!r})'.format(
-                    cls=type(self).__qualname__,
-                    this=self,
-                ))
+        cls = type(self).__qualname__
+        return (f'{cls}({self._conn!r}, {self._schema!r},'
+                f' {self._where_expr!r})')
 
     def __iter__(self):
         cur = self._conn.cursor()
@@ -229,10 +225,9 @@ class QuerySet(collections.abc.Set, Executable):
         return len(frozenset(self))
 
     def _get_query(self):
-        query = Query('SELECT {columns} FROM {source}'.format(
-            columns=self._schema.column_names_sql,
-            source=_escape_name(self._schema.name),
-        ))
+        columns = self._schema.column_names_sql
+        source = _escape_name(self._schema.name)
+        query = Query(f'SELECT {columns} FROM {source}')
         if self._where_expr:
             query += ' WHERE '
             query += self._where_expr
@@ -263,50 +258,43 @@ class Table(collections.abc.MutableSet, QuerySet, SimpleSQL):
             self._get_discard_query(row).execute_with(cur)
 
     def _get_update_query(self, row):
-        query = Query(
-            'UPDATE {table} SET '.format(
-                table=_escape_name(self._schema.name),
-            ))
+        query = Query(f'UPDATE {_escape_name(self._schema.name)} SET ')
         query += self._get_joined_cols(row)
         query += Query(
-            ' WHERE {}=?'
-            .format(_escape_name(self._schema.primary_key)),
+            f' WHERE {_escape_name(self._schema.primary_key)}=?',
             (getattr(row, self._schema.primary_key),),
         )
         return query
 
     def _get_insert_query(self, row):
-        sql = 'INSERT INTO {table} ({cols}) VALUES ({vals})'.format(
-            table=_escape_name(self._schema.name),
-            cols=self._schema.column_names_sql,
-            vals=','.join('?' for _ in row),
-        )
+        table = _escape_name(self._schema.name)
+        cols = self._schema.column_names_sql
+        vals = ','.join('?' for _ in row)
+        sql = f'INSERT INTO {table} ({cols}) VALUES ({vals})'
         return Query(sql, row)
 
     def _get_discard_query(self, row):
-        query = Query(
-            'DELETE FROM {table} WHERE '.format(
-                table=_escape_name(self._schema.name),
-            ))
+        query = Query(f'DELETE FROM {_escape_name(self._schema.name)} WHERE ')
         query += self._get_anded_cols(row)
         return query
 
     def _get_joined_cols(self, row):
-        sql = ','.join('%s=?' % _escape_name(col)
+        sql = ','.join(f'{_escape_name(col)}=?'
                        for col in self._schema.column_names)
         return Query(sql, row)
 
     def _get_anded_cols(self, row):
-        sql = ' AND '.join('%s=?' % _escape_name(col)
+        sql = ' AND '.join(f'{_escape_name(col)}=?'
                            for col in self._schema.column_names)
         return Query(sql, row)
 
 
 def _escape_string(string):
     """Escape SQL string."""
-    return "'%s'" % string.replace("'", "''")
+    string = string.replace("'", "''")
+    return f"'{string}'"
 
 
 def _escape_name(string):
     """Escape SQL identifier."""
-    return '"%s"' % string
+    return f'"{string}"'

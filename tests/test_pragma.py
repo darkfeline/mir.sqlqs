@@ -14,6 +14,8 @@
 
 from unittest import mock
 
+import pytest
+
 from mir.sqlqs.pragma import PragmaHelper
 
 
@@ -22,6 +24,13 @@ def test_set_foreign_keys(conn):
     helper.foreign_keys = True
     got = conn.cursor().execute('PRAGMA foreign_keys').fetchone()[0]
     assert got == 1
+
+
+def test_set_foreign_keys_injection(conn):
+    helper = PragmaHelper(conn)
+    with mock.patch.object(type(helper), '_execute') as exec_mock:
+        helper.foreign_keys = '; do bad stuff'
+    exec_mock.assert_called_once_with('PRAGMA foreign_keys=1')
 
 
 def test_get_foreign_keys(conn):
@@ -35,6 +44,12 @@ def test_set_user_version(conn):
     helper.user_version = 13
     got = conn.cursor().execute('PRAGMA user_version').fetchone()[0]
     assert got == 13
+
+
+def test_set_user_version_injection(conn):
+    helper = PragmaHelper(conn)
+    with pytest.raises(ValueError):
+        helper.user_version = '; do bad stuff'
 
 
 def test_get_user_version(conn):

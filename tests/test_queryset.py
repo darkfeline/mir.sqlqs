@@ -19,6 +19,11 @@ import pytest
 import mir.sqlqs.queryset as queryset
 
 
+def test_query_repr():
+    query = queryset.Query('foo', ('bar',))
+    assert repr(query) == "Query('foo', ('bar',))"
+
+
 def test_query_bool_false():
     query = queryset.Query('', ())
     assert not query

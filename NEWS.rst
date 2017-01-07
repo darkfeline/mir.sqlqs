@@ -3,8 +3,13 @@ Release notes
 
 This project uses `semantic versioning <http://semver.org/>`_.
 
-master
-------
+0.3.0
+-----
+
+Changed
+^^^^^^^
+
+- Moved to Python 3.6
 
 0.2.0 (2017-01-05)
 ------------------

@@ -23,9 +23,8 @@ class PragmaHelper:
         self._conn = conn
 
     def __repr__(self):
-        return '{cls}({this._conn!r})'.format(
-            cls=type(self).__qualname__,
-            this=self)
+        cls = type(self).__qualname__
+        return f'{cls}({self._conn!r})'
 
     def _execute(self, *args):
         return self._conn.cursor().execute(*args)
@@ -40,7 +39,7 @@ class PragmaHelper:
         value = 1 if value else 0
         # Parameterization doesn't work with PRAGMA, so we have to use string
         # formatting.  This is safe from injections because it coerces to int.
-        self._execute('PRAGMA foreign_keys=%d' % value)
+        self._execute(f'PRAGMA foreign_keys={int(value)}')
 
     def check_foreign_keys(self):
         """Check foreign keys for errors."""
@@ -56,4 +55,4 @@ class PragmaHelper:
         """Set database user version."""
         # Parameterization doesn't work with PRAGMA, so we have to use string
         # formatting.  This is safe from injections because it coerces to int.
-        self._execute('PRAGMA user_version=%d' % version)
+        self._execute(f'PRAGMA user_version={int(version)}')

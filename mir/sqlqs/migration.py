@@ -31,17 +31,16 @@ class MigrationManager:
         self._final_ver = initial_ver
 
     def __repr__(self):
-        return ('<{cls} with migrations={this._migrations!r}'
-                ' final_ver={this._final_ver!r}>'.format(
-                    cls=type(self).__qualname__,
-                    this=self))
+        cls = type(self).__qualname__
+        return (f'<{cls} with migrations={self._migrations!r}'
+                f' final_ver={self._final_ver!r}>')
 
     def register(self, migration: 'Migration'):
         """Register a migration.
 
         You can only register migrations in order.  For example, you can
-        register migrations from version 1 to 2, then 2 to 3, then 3 to 4.  You
-        cannot register 1 to 2 followed by 3 to 4.
+        register migrations from version 1 to 2, then 2 to 3, then 3 to
+        4.  You cannot register 1 to 2 followed by 3 to 4.
         """
         if migration.from_ver != self._final_ver:
             raise ValueError('cannot register disjoint migration')
@@ -96,14 +95,13 @@ class MigrationManager:
             return self._migrations[version]
         except KeyError:
             raise MigrationError(
-                'No registered migration for version %d'
-                % version)
+                f'No registered migration for version {version}')
 
     def _check_foreign_keys(self, conn):
         foreign_key_errors = list(PragmaHelper(conn).check_foreign_keys())
         if foreign_key_errors:
             raise MigrationError(
-                'Foreign key check failed: %r', foreign_key_errors)
+                f'Foreign key check failed: {foreign_key_errors}')
 
     def _before_migration(self, conn):
         """Template method."""
