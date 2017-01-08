@@ -43,7 +43,7 @@ class Executable(metaclass=abc.ABCMeta):
         return cur.execute(query.sql, query.params)
 
 
-class Query(Executable, namedtuple('Query', 'sql,params')):
+class Query(Executable):
 
     """Parametrized query.
 
@@ -53,10 +53,11 @@ class Query(Executable, namedtuple('Query', 'sql,params')):
     params -- Parameters
     """
 
-    __slots__ = ()
+    __slots__ = ('sql', 'params')
 
-    def __new__(cls, sql, params=()):
-        return super().__new__(cls, sql, params)
+    def __init__(self, sql, params=()):
+        self.sql = sql
+        self.params = params
 
     def __repr__(self):
         cls = type(self).__qualname__
