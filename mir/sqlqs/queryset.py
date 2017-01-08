@@ -126,7 +126,6 @@ class Schema(SimpleSQL):
         self.name = name
         self._columns = columns
         self._constraints = constraints
-        self.primary_key = self._find_primary_key(columns)
         self.row_class = namedtuple(name, (column.name for column in columns))
 
     @staticmethod
@@ -144,6 +143,10 @@ class Schema(SimpleSQL):
         cls = type(self).__qualname__
         return (f'{cls}({self.name!r}, {self._columns!r},'
                 f' {self._constraints!r})')
+
+    @property
+    def primary_key(self):
+        return self._find_primary_key(self._columns)
 
     @property
     def column_names(self):
