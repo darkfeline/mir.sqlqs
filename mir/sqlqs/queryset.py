@@ -58,6 +58,10 @@ class Query(Executable, namedtuple('Query', 'sql,params')):
     def __new__(cls, sql, params=()):
         return super().__new__(cls, sql, params)
 
+    def __repr__(self):
+        cls = type(self).__qualname__
+        return f'{cls}({self.sql!r}, {self.params!r})'
+
     def __bool__(self):
         return bool(self.sql) and bool(self.params)
 

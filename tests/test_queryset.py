@@ -21,7 +21,7 @@ import mir.sqlqs.queryset as queryset
 
 def test_query_repr():
     query = queryset.Query('foo', ('bar',))
-    assert repr(query) == "Query(sql='foo', params=('bar',))"
+    assert repr(query) == "Query('foo', ('bar',))"
 
 
 def test_query_bool_false():
