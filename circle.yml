@@ -5,6 +5,8 @@ dependencies:
   post:
     - sudo apt-get update; sudo apt-get install python-apsw
 test:
+  override:
+    - tox
   post:
     - mv .pytest $CIRCLE_TEST_REPORTS/pytest
     - bash <(curl -s https://codecov.io/bash)
