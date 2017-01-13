@@ -1,12 +1,10 @@
 machine:
   python:
-    version: 3.6.0b1
+    version: 3.6.0
 dependencies:
-  override:
+  post:
     - sudo apt-get update; sudo apt-get install python-apsw
-    - pip3 install -r requirements.txt
-    - pip3 install -e .
 test:
-  override:
-    - pytest
+  post:
+    - mv .pytest $CIRCLE_TEST_REPORTS/pytest
     - bash <(curl -s https://codecov.io/bash)
