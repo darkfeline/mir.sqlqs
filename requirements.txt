@@ -1,4 +1,4 @@
-apsw==3.15.2
+apsw==3.9.2
 
 # Test dependencies
 pytest==3.0.4
