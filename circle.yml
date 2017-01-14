@@ -3,12 +3,10 @@ machine:
     version: 3.6.0
 dependencies:
   post:
-    - sudo apt-get update
-    - sudo apt-get install python3.6-dev
-    - sudo pip install https://github.com/rogerbinns/apsw/releases/download/3.15.2-r1/apsw-3.15.2-r1.zip --global-option=fetch --global-option=--version --global-option=3.15.2 --global-option=--all --global-option=build --global-option=--enable-all-extensions
+    - sudo apt-get update && sudo apt-get install python3-apsw
 test:
   override:
-    - tox
+    - pytest --junitxml=.pytest/{envname}.xml
   post:
     - mv .pytest $CIRCLE_TEST_REPORTS/pytest
     - bash <(curl -s https://codecov.io/bash)
