@@ -6,7 +6,7 @@ dependencies:
     - sudo apt-get update && sudo apt-get install python3-apsw
 test:
   override:
-    - pytest --junitxml=.pytest/{envname}.xml
+    - pytest --junitxml=.pytest/py36.xml
   post:
     - mv .pytest $CIRCLE_TEST_REPORTS/pytest
     - bash <(curl -s https://codecov.io/bash)
