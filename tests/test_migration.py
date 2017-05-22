@@ -81,7 +81,7 @@ def test_foreign_key_errors(conn):
     func = mock.Mock([])
     manager.migration(0, 1)(func)
     helper_patch = mock.patch(
-        'mir.sqlqs.pragma.PragmaHelper.check_foreign_keys',
+        'mir.sqlqs.pragma.check_foreign_keys',
         autospec=True,
         return_value=[mock.sentinel.error],
     )
