@@ -14,12 +14,22 @@
 
 """SQLite PRAGMA helpers"""
 
+import warnings
+
+
+def is_foreign_keys_enabled(conn):
+    """Return True if foreign_keys is enabled."""
+    cur = conn.cursor()
+    cur.execute('PRAGMA foreign_keys')
+    return cur.fetchone()[0] > 0
+
 
 class PragmaHelper:
 
     __slots__ = ('_conn',)
 
     def __init__(self, conn):
+        warnings.warn('PragmaHelper is deprecated')
         self._conn = conn
 
     def __repr__(self):
@@ -32,7 +42,7 @@ class PragmaHelper:
     @property
     def foreign_keys(self):
         """Enforce foreign key constraints."""
-        return self._execute('PRAGMA foreign_keys').fetchone()[0]
+        return is_foreign_keys_enabled(self._conn)
 
     @foreign_keys.setter
     def foreign_keys(self, value):
