@@ -28,9 +28,9 @@ def test_set_foreign_keys(conn):
 
 def test_set_foreign_keys_injection(conn):
     helper = PragmaHelper(conn)
-    with mock.patch.object(type(helper), '_execute') as exec_mock:
+    with mock.patch('mir.sqlqs.pragma.set_foreign_keys') as set_mock:
         helper.foreign_keys = '; do bad stuff'
-    exec_mock.assert_called_once_with('PRAGMA foreign_keys=1')
+    set_mock.assert_called_once_with(conn, 1)
 
 
 def test_get_foreign_keys(conn):

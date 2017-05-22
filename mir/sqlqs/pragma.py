@@ -24,6 +24,17 @@ def is_foreign_keys_enabled(conn):
     return cur.fetchone()[0] > 0
 
 
+def set_foreign_keys(conn, value: int):
+    """Set foreign_keys.
+
+    Pass 1 for value to enable, 0 to disable.
+    """
+    cur = conn.cursor()
+    # Parameterization doesn't work with PRAGMA, so we have to use string
+    # formatting.
+    cur.execute(f'PRAGMA foreign_keys={value}')
+
+
 class PragmaHelper:
 
     __slots__ = ('_conn',)
@@ -47,9 +58,7 @@ class PragmaHelper:
     @foreign_keys.setter
     def foreign_keys(self, value):
         value = 1 if value else 0
-        # Parameterization doesn't work with PRAGMA, so we have to use string
-        # formatting.  This is safe from injections because it coerces to int.
-        self._execute(f'PRAGMA foreign_keys={int(value)}')
+        set_foreign_keys(self._conn, value)
 
     def check_foreign_keys(self):
         """Check foreign keys for errors."""
