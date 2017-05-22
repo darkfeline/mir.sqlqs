@@ -12,57 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest import mock
-
-import pytest
-
-from mir.sqlqs.pragma import PragmaHelper
-
-
-def test_set_foreign_keys(conn):
-    helper = PragmaHelper(conn)
-    helper.foreign_keys = True
-    got = conn.cursor().execute('PRAGMA foreign_keys').fetchone()[0]
-    assert got == 1
-
-
-def test_set_foreign_keys_injection(conn):
-    helper = PragmaHelper(conn)
-    with mock.patch('mir.sqlqs.pragma.set_foreign_keys') as set_mock:
-        helper.foreign_keys = '; do bad stuff'
-    set_mock.assert_called_once_with(conn, 1)
+from mir.sqlqs import pragma
 
 
 def test_get_foreign_keys(conn):
     conn.cursor().execute('PRAGMA foreign_keys=0')
-    helper = PragmaHelper(conn)
-    assert helper.foreign_keys == 0
+    assert pragma.get_foreign_keys(conn) == 0
 
 
-def test_set_user_version(conn):
-    helper = PragmaHelper(conn)
-    helper.user_version = 13
-    got = conn.cursor().execute('PRAGMA user_version').fetchone()[0]
-    assert got == 13
-
-
-def test_set_user_version_injection(conn):
-    helper = PragmaHelper(conn)
-    with pytest.raises(ValueError):
-        helper.user_version = '; do bad stuff'
+def test_set_foreign_keys(conn):
+    pragma.set_foreign_keys(conn, 1)
+    got = conn.cursor().execute('PRAGMA foreign_keys').fetchone()[0]
+    assert got == 1
 
 
 def test_get_user_version(conn):
     conn.cursor().execute('PRAGMA user_version=13')
-    helper = PragmaHelper(conn)
-    assert helper.user_version == 13
+    assert pragma.get_user_version(conn) == 13
+
+
+def test_set_user_version(conn):
+    pragma.set_user_version(conn, 13)
+    got = conn.cursor().execute('PRAGMA user_version').fetchone()[0]
+    assert got == 13
 
 
 def test_check_foreign_keys(conn):
-    helper = PragmaHelper(conn)
-    assert list(helper.check_foreign_keys()) == []
-
-
-def test_pragma_helper_repr():
-    helper = PragmaHelper(mock.sentinel.conn)
-    assert repr(helper) == 'PragmaHelper(sentinel.conn)'
+    assert list(pragma.check_foreign_keys(conn)) == []
