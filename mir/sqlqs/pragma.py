@@ -17,11 +17,11 @@
 import warnings
 
 
-def is_foreign_keys_enabled(conn):
-    """Return True if foreign_keys is enabled."""
+def get_foreign_keys(conn):
+    """Return foreign_keys value."""
     cur = conn.cursor()
     cur.execute('PRAGMA foreign_keys')
-    return cur.fetchone()[0] > 0
+    return cur.fetchone()[0]
 
 
 def set_foreign_keys(conn, value: int):
@@ -63,7 +63,7 @@ class PragmaHelper:
     @property
     def foreign_keys(self):
         """Enforce foreign key constraints."""
-        return is_foreign_keys_enabled(self._conn)
+        return get_foreign_keys(self._conn)
 
     @foreign_keys.setter
     def foreign_keys(self, value):
