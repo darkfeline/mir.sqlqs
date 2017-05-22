@@ -85,7 +85,7 @@ class Query(Executable):
         return self
 
 
-class SimpleSQL(Executable):
+class SimpleQuery(Executable):
 
     """Interface for objects with a non-parametrized SQL representation.
 
@@ -105,7 +105,7 @@ class SimpleSQL(Executable):
         return Query(self._get_sql())
 
 
-class Schema(SimpleSQL):
+class Schema(SimpleQuery):
 
     """Table schema
 
@@ -237,7 +237,7 @@ class QuerySet(collections.abc.Set, Executable):
         return query
 
 
-class Table(collections.abc.MutableSet, QuerySet, SimpleSQL):
+class Table(collections.abc.MutableSet, QuerySet, SimpleQuery):
 
     """SQL table as a set."""
 

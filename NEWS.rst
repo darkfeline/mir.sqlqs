@@ -6,6 +6,11 @@ This project uses `semantic versioning <http://semver.org/>`_.
 0.4.0
 -----
 
+Changed
+^^^^^^^
+
+- Renamed SimpleSQL to SimpleQuery.
+
 0.3.0 (2017-05-21)
 ------------------
 
