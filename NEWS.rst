@@ -6,6 +6,16 @@ This project uses `semantic versioning <http://semver.org/>`_.
 0.3.0
 -----
 
+Added
+^^^^^
+
+- Added pragma functions.
+
+Removed
+^^^^^^^
+
+- Removed PragmaHelper (replaced with functions).
+
 Changed
 ^^^^^^^
 
