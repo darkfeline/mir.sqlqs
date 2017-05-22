@@ -45,6 +45,21 @@ def check_foreign_keys(conn):
     yield from cur
 
 
+def get_user_version(conn):
+    """Return user_version value."""
+    cur = conn.cursor()
+    cur.execute('PRAGMA user_version')
+    return cur.fetchone()[0]
+
+
+def set_user_version(conn, value: int):
+    """Set user_version."""
+    cur = conn.cursor()
+    # Parameterization doesn't work with PRAGMA, so we have to use string
+    # formatting.
+    cur.execute(f'PRAGMA user_version={value}')
+
+
 class PragmaHelper:
 
     __slots__ = ('_conn',)
@@ -77,11 +92,9 @@ class PragmaHelper:
     @property
     def user_version(self) -> int:
         """Database user version."""
-        return self._execute('PRAGMA user_version').fetchone()[0]
+        return get_user_version(self._conn)
 
     @user_version.setter
     def user_version(self, version: int):
         """Set database user version."""
-        # Parameterization doesn't work with PRAGMA, so we have to use string
-        # formatting.  This is safe from injections because it coerces to int.
-        self._execute(f'PRAGMA user_version={int(version)}')
+        set_user_version(self._conn, int(version))
