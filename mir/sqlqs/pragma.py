@@ -35,6 +35,16 @@ def set_foreign_keys(conn, value: int):
     cur.execute(f'PRAGMA foreign_keys={value}')
 
 
+def check_foreign_keys(conn):
+    """Check for foreign key errors.
+
+    Return an iterator of rows with errors.
+    """
+    cur = conn.cursor()
+    cur.execute('PRAGMA foreign_key_check')
+    yield from cur
+
+
 class PragmaHelper:
 
     __slots__ = ('_conn',)
@@ -62,7 +72,7 @@ class PragmaHelper:
 
     def check_foreign_keys(self):
         """Check foreign keys for errors."""
-        yield from self._execute('PRAGMA foreign_key_check')
+        yield from check_foreign_keys(self._conn)
 
     @property
     def user_version(self) -> int:
