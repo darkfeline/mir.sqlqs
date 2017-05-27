@@ -14,8 +14,6 @@
 
 """SQLite PRAGMA helpers"""
 
-import warnings
-
 
 def get_foreign_keys(conn):
     """Return foreign_keys value."""
