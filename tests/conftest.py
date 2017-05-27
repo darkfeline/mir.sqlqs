@@ -16,6 +16,7 @@ import pathlib
 
 import apsw
 import pytest
+import sqlalchemy
 
 
 @pytest.fixture
@@ -27,3 +28,13 @@ def tmpdir(tmpdir_factory):
 @pytest.fixture
 def conn():
     return apsw.Connection(':memory:')
+
+
+@pytest.fixture
+def engine():
+    return sqlalchemy.create_engine('sqlite:///:memory:')
+
+
+@pytest.fixture
+def aconn(engine):
+    return engine.connect()

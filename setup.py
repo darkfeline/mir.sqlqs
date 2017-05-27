@@ -31,5 +31,5 @@ setup(
     ],
 
     packages=['mir.sqlqs'],
-    install_requires=['apsw'],
+    install_requires=['apsw', 'SQLAlchemy'],
 )
