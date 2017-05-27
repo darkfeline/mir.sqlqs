@@ -6,10 +6,10 @@ This project uses `semantic versioning <http://semver.org/>`_.
 0.4.0
 -----
 
-Changed
-^^^^^^^
+Added
+^^^^^
 
-- Renamed SimpleSQL to SimpleQuery.
+- SQLAlchemy support
 
 0.3.0 (2017-05-21)
 ------------------
